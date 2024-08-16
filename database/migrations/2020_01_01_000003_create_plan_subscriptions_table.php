@@ -18,9 +18,11 @@ class CreatePlanSubscriptionsTable extends Migration
             $table->increments('id');
             $table->morphs('subscriber');
             $table->integer('plan_id')->unsigned();
+            $table->integer('next_plan_id')->unsigned();
             $table->string('slug');
             $table->json('name');
             $table->json('description')->nullable();
+            $table->tinyInteger('auto_renew')->default(1);
             $table->dateTime('trial_ends_at')->nullable();
             $table->dateTime('starts_at')->nullable();
             $table->dateTime('ends_at')->nullable();

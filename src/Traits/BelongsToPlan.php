@@ -19,6 +19,10 @@ trait BelongsToPlan
         return $this->belongsTo(config('rinvex.subscriptions.models.plan'), 'plan_id', 'id', 'plan');
     }
 
+    public function nextPlan(): BelongsTo
+    {
+        return $this->belongsTo(config('rinvex.subscriptions.models.plan'), 'next_plan_id', 'id', 'plan');
+    }
     /**
      * Scope models by plan id.
      *

@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property int                 $subscriber_id
  * @property string              $subscriber_type
  * @property int                 $plan_id
+ * @property int                 $next_plan_id
  * @property string              $slug
  * @property array               $title
  * @property array               $description
@@ -81,8 +82,10 @@ class PlanSubscription extends Model
         'subscriber_id',
         'subscriber_type',
         'plan_id',
+        'next_plan_id',
         'slug',
         'name',
+        'auto_renew',
         'description',
         'trial_ends_at',
         'starts_at',
@@ -98,6 +101,7 @@ class PlanSubscription extends Model
         'subscriber_id' => 'integer',
         'subscriber_type' => 'string',
         'plan_id' => 'integer',
+        'next_plan_id' => 'integer',
         'slug' => 'string',
         'trial_ends_at' => 'datetime',
         'starts_at' => 'datetime',
@@ -153,6 +157,7 @@ class PlanSubscription extends Model
             'description' => 'nullable|string|max:32768',
             'slug' => 'required|alpha_dash|max:150|unique:'.config('rinvex.subscriptions.tables.plan_subscriptions').',slug',
             'plan_id' => 'required|integer|exists:'.config('rinvex.subscriptions.tables.plans').',id',
+            'next_plan_id' => 'nullable|integer|exists:'.config('rinvex.subscriptions.tables.plans').',id',
             'subscriber_id' => 'required|integer',
             'subscriber_type' => 'required|string|strip_tags|max:150',
             'trial_ends_at' => 'nullable|date',
@@ -306,6 +311,7 @@ class PlanSubscription extends Model
 
         // Attach new plan to subscription
         $this->plan_id = $plan->getKey();
+        $this->next_plan_id = $plan->getKey();
         $this->save();
 
         return $this;
@@ -415,9 +421,9 @@ class PlanSubscription extends Model
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeFindActive(Builder $builder): Builder
+    public function scopeFindActive(Builder $builder, Model $subscriber): Builder
     {
-        return $builder->where('ends_at', '>', now());
+        return $builder->where('subscriber_id', $subscriber->getKey())->where('ends_at', '>', now())->where('starts_at', '<=', now());
     }
 
     /**
@@ -573,4 +579,18 @@ class PlanSubscription extends Model
 
         return $feature->value ?? null;
     }
+    
+    /**
+     * getRemainingDays
+     *
+     * @return int
+     */
+    public function getRemainingDays():int
+    {
+        $now = Carbon::now();
+        $ends_at = new Carbon($this->ends_at);
+        
+        return ($now->floatDiffInDays($ends_at, false) < 1) ? 0 : intval(ceil($now->floatDiffInDays($ends_at)));
+    }
+
 }

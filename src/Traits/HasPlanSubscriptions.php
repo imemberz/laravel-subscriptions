@@ -105,17 +105,19 @@ trait HasPlanSubscriptions
      *
      * @return \Rinvex\Subscriptions\Models\PlanSubscription
      */
-    public function newPlanSubscription($subscription, Plan $plan, Carbon $startDate = null): PlanSubscription
+    public function newPlanSubscription($subscription, Plan $plan, int $next_plan_id =null, Carbon $startDate = null, int $days = 0): PlanSubscription
     {
         $trial = new Period($plan->trial_interval, $plan->trial_period, $startDate ?? now());
         $period = new Period($plan->invoice_interval, $plan->invoice_period, $trial->getEndDate());
+        $ends_at = $period->getEndDate()->addDays($days);
 
         return $this->planSubscriptions()->create([
             'name' => $subscription,
             'plan_id' => $plan->getKey(),
+            'next_plan_id' => $next_plan_id ?? $plan->getKey(),
             'trial_ends_at' => $trial->getEndDate(),
             'starts_at' => $period->getStartDate(),
-            'ends_at' => $period->getEndDate(),
+            'ends_at' => $ends_at,
         ]);
     }
 }
