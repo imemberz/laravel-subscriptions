@@ -96,6 +96,22 @@ trait HasPlanSubscriptions
         return $subscription && $subscription->active();
     }
 
+    public function subscribedCheck(): int
+    {
+        $subscription = $this->planSubscriptions()->latest()->first();
+        if(!$subscription){
+            return 0;
+        }
+        if($subscription->active()){
+            return 1;
+        }
+        $plan = app('rinvex.subscriptions.plan')->where('id', $subscription->plan_id)->first();
+        if(Carbon::parse(Carbon::now())->diffInDays($subscription->ends_at) < $plan->grace_period){
+            return 2;
+        }
+
+        return 0;
+    }
     /**
      * Subscribe subscriber to a new plan.
      *
